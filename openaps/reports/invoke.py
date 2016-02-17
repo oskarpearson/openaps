@@ -4,10 +4,18 @@ invoke   - generate a report
 """
 from __future__ import print_function
 from openaps.reports.report import Report
+from openaps.exceptions import RetryableCommsException
 from openaps import uses
+
 import reporters
 import sys
 import argparse
+import time
+
+# How many times should we retry in case of RetryableCommsException fails?
+COMMS_EXCEPTION_RETRYCOUNT = 3
+# How long should we wait after a RetryableCommsException, in seconds?
+COMMS_RETRY_BACKOFF = 0
 
 def configure_app (app, parser):
   """
@@ -36,18 +44,25 @@ def main (args, app):
     print(report.format_url( ))
     repo = app.git_repo( )
 
-    try:
+    for attempt in range(COMMS_EXCEPTION_RETRYCOUNT):
+      try:
         output = task.method(args, app)
-    except Exception as e:
-        print(report.name, ' raised ', e, file=sys.stderr)
-        # save prior progress in git
-        app.epilog( )
-        # ensure we still blow up with non-zero exit
-        raise
-    else:
         reporters.Reporter(report, device, task)(output)
         print('reporting', report.name)
         repo.git.add([report.name])
         # XXX: https://github.com/gitpython-developers/GitPython/issues/265o
         # GitPython <  0.3.7, this can corrupt the index
         # repo.index.add([report.name])
+        # Don't retry on success
+        break
+      except RetryableCommsException as e:
+        message = 'Raised %s - retry %s of %s' % (e, attempt, COMMS_EXCEPTION_RETRYCOUNT)
+        print(report.name, message, file=sys.stderr)
+        time.sleep(COMMS_RETRY_BACKOFF)
+      except Exception as e:
+        message = 'Raised %s' % e
+        print(report.name, message, file=sys.stderr)
+        # save prior progress in git
+        app.epilog( )
+        # ensure we still blow up with non-zero exit
+        raise

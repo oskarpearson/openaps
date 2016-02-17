@@ -1,0 +1,2 @@
+class RetryableCommsException(Exception):
+  pass
