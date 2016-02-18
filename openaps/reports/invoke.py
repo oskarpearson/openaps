@@ -15,7 +15,7 @@ import time
 # How many times should we retry in case of RetryableCommsException fails?
 COMMS_EXCEPTION_RETRYCOUNT = 3
 # How long should we wait after a RetryableCommsException, in seconds?
-COMMS_RETRY_BACKOFF = 0
+COMMS_RETRY_BACKOFF = 2
 
 def configure_app (app, parser):
   """
