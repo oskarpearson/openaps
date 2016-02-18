@@ -56,7 +56,7 @@ def main (args, app):
         # Don't retry on success
         break
       except RetryableCommsException as e:
-        message = 'Raised %s - retry %s of %s' % (e, attempt, COMMS_EXCEPTION_RETRYCOUNT)
+        message = 'Raised %s - retry %s of %s' % (e, attempt + 1, COMMS_EXCEPTION_RETRYCOUNT)
         print(report.name, message, file=sys.stderr)
         time.sleep(COMMS_RETRY_BACKOFF)
       except Exception as e:
